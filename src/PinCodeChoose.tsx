@@ -73,204 +73,167 @@ export interface IProps {
   delayBetweenAttempts?: number
 }
 
-export type IState = {
-  status: PinStatus
-  pinCode: string
-}
+const { useState, useCallback } = React;
 
-class PinCodeChoose extends React.PureComponent<IProps, IState> {
-  static defaultProps: Partial<IProps> = {
-    styleContainer: null
-  }
-  constructor(props: IProps) {
-    super(props)
-    this.state = { status: PinStatus.choose, pinCode: '' }
-    this.endProcessCreation = this.endProcessCreation.bind(this)
-    this.endProcessConfirm = this.endProcessConfirm.bind(this)
-  }
+const PinCodeChoose = (props: IProps) => {
+  const [status, setStatus] = useState<PinStatus>(PinStatus.choose);
+  const [pinCode, setPinCode] = useState<string>("");
 
-  endProcessCreation = (pinCode: string, isErrorValidation?: boolean) => {
-    this.setState({
-      pinCode: isErrorValidation ? '' : pinCode,
-      status: isErrorValidation ? PinStatus.choose : PinStatus.confirm
-    })
-  }
+  const endProcessCreation = useCallback((pinCodeValue: string, isErrorValidation?: boolean) => {
+    setPinCode(isErrorValidation ? '' : pinCodeValue);
+    setStatus(isErrorValidation ? PinStatus.choose : PinStatus.confirm);
+  }, []);
 
-  endProcessConfirm = async (pinCode: string) => {
-    if (pinCode === this.state.pinCode) {
-      if (this.props.storePin) {
-        this.props.storePin(pinCode)
+  const endProcessConfirm = useCallback(async (pinCodeValue: string) => {
+    if (pinCodeValue === pinCode) {
+      if (props.storePin) {
+        props.storePin(pinCodeValue);
       } else {
         await Keychain.setInternetCredentials(
-          this.props.pinCodeKeychainName,
-          this.props.pinCodeKeychainName,
-          pinCode,
+          props.pinCodeKeychainName,
+          props.pinCodeKeychainName,
+          pinCodeValue,
           noBiometricsConfig
-        )
+        );
       }
-      if (!!this.props.finishProcess) this.props.finishProcess(pinCode)
+      if (!!props.finishProcess) props.finishProcess(pinCodeValue);
     } else {
-      this.setState({ status: PinStatus.choose })
+      setStatus(PinStatus.choose);
     }
-  }
+  }, [pinCode, props]);
 
-  cancelConfirm = () => {
-    this.setState({ status: PinStatus.choose })
-  }
+  const cancelConfirm = useCallback(() => {
+    setStatus(PinStatus.choose);
+  }, []);
 
-  render() {
-    return (
-      <View
-        style={[
-          styles.container,
-          this.props.styleContainer
-        ]}>
-        {this.state.status === PinStatus.choose && (
-          <PinCode
-            alphabetCharsVisible={this.props.alphabetCharsVisible}
-            buttonDeleteComponent={this.props.buttonDeleteComponent || null}
-            buttonDeleteText={this.props.buttonDeleteText}
-            buttonNumberComponent={this.props.buttonNumberComponent || null}
-            colorCircleButtons={this.props.colorCircleButtons}
-            colorPassword={this.props.colorPassword || undefined}
-            colorPasswordEmpty={this.props.colorPasswordEmpty}
-            colorPasswordError={this.props.colorPasswordError || undefined}
-            customBackSpaceIcon={this.props.customBackSpaceIcon}
-            emptyColumnComponent={this.props.emptyColumnComponent}
-            endProcess={this.endProcessCreation}
-            getCurrentLength={this.props.getCurrentLength}
-            iconButtonDeleteDisabled={this.props.iconButtonDeleteDisabled}
-            numbersButtonOverlayColor={
-              this.props.numbersButtonOverlayColor || undefined
-            }
-            passwordComponent={this.props.passwordComponent || null}
-            passwordLength={this.props.passwordLength || 4}
-            pinCodeVisible={this.props.pinCodeVisible}
-            sentenceTitle={this.props.titleChoose}
-            status={PinStatus.choose}
-            styleAlphabet={this.props.styleAlphabet}
-            styleButtonCircle={this.props.styleButtonCircle}
-            styleCircleHiddenPassword={this.props.styleCircleHiddenPassword}
-            styleCircleSizeEmpty={this.props.styleCircleSizeEmpty}
-            styleCircleSizeFull={this.props.styleCircleSizeFull}
-            styleColorButtonTitle={this.props.styleColorButtonTitle}
-            styleColorButtonTitleSelected={
-              this.props.styleColorButtonTitleSelected
-            }
-            styleColorSubtitle={this.props.styleColorSubtitle}
-            styleColorSubtitleError={this.props.styleColorSubtitleError}
-            styleColorTitle={this.props.styleColorTitle}
-            styleColorTitleError={this.props.styleColorTitleError}
-            styleColumnButtons={this.props.styleColumnButtons}
-            styleColumnDeleteButton={this.props.styleColumnDeleteButton}
-            styleContainer={this.props.styleContainerPinCode}
-            styleDeleteButtonColorHideUnderlay={
-              this.props.styleDeleteButtonColorHideUnderlay
-            }
-            styleDeleteButtonColorShowUnderlay={
-              this.props.styleDeleteButtonColorShowUnderlay
-            }
-            styleDeleteButtonIcon={this.props.styleDeleteButtonIcon}
-            styleDeleteButtonSize={this.props.styleDeleteButtonSize}
-            styleDeleteButtonText={this.props.styleDeleteButtonText}
-            styleEmptyColumn={this.props.styleEmptyColumn}
-            stylePinCodeCircle={this.props.stylePinCodeCircle}
-            styleRowButtons={this.props.styleRowButtons}
-            styleTextButton={this.props.styleTextButton}
-            styleTextSubtitle={this.props.styleTextSubtitle}
-            styleTextTitle={this.props.styleTextTitle}
-            styleViewTitle={this.props.styleViewTitle}
-            subtitle={this.props.subtitleChoose}
-            subtitleComponent={this.props.subtitleComponent || null}
-            subtitleError={this.props.subtitleError || 'Please try again'}
-            textPasswordVisibleFamily={this.props.textPasswordVisibleFamily}
-            textPasswordVisibleSize={this.props.textPasswordVisibleSize}
-            titleComponent={this.props.titleComponent || null}
-            titleValidationFailed={
-              this.props.titleValidationFailed || 'PIN code unsafe'
-            }
-            validationRegex={this.props.validationRegex}
-            vibrationEnabled={this.props.vibrationEnabled}
-          />
-        )}
-        {this.state.status === PinStatus.confirm && (
-          <PinCode
-            alphabetCharsVisible={this.props.alphabetCharsVisible}
-            buttonDeleteComponent={this.props.buttonDeleteComponent || null}
-            buttonDeleteText={this.props.buttonDeleteText}
-            buttonNumberComponent={this.props.buttonNumberComponent || null}
-            cancelFunction={this.cancelConfirm}
-            colorCircleButtons={this.props.colorCircleButtons}
-            colorPassword={this.props.colorPassword || undefined}
-            colorPasswordEmpty={this.props.colorPasswordEmpty}
-            colorPasswordError={this.props.colorPasswordError || undefined}
-            customBackSpaceIcon={this.props.customBackSpaceIcon}
-            emptyColumnComponent={this.props.emptyColumnComponent}
-            endProcess={this.endProcessConfirm}
-            getCurrentLength={this.props.getCurrentLength}
-            iconButtonDeleteDisabled={this.props.iconButtonDeleteDisabled}
-            numbersButtonOverlayColor={
-              this.props.numbersButtonOverlayColor || undefined
-            }
-            passwordComponent={this.props.passwordComponent || null}
-            passwordLength={this.props.passwordLength || 4}
-            pinCodeVisible={this.props.pinCodeVisible}
-            previousPin={this.state.pinCode}
-            sentenceTitle={this.props.titleConfirm}
-            status={PinStatus.confirm}
-            subtitle={this.props.subtitleConfirm}
-            subtitleComponent={this.props.subtitleComponent || null}
-            subtitleError={this.props.subtitleError || 'Please try again'}
-            textPasswordVisibleFamily={this.props.textPasswordVisibleFamily}
-            textPasswordVisibleSize={this.props.textPasswordVisibleSize}
-            titleAttemptFailed={
-              this.props.titleAttemptFailed || 'Incorrect PIN Code'
-            }
-            titleComponent={this.props.titleComponent || null}
-            titleConfirmFailed={
-              this.props.titleConfirmFailed || 'Your entries did not match'
-            }
-            styleAlphabet={this.props.styleAlphabet}
-            styleButtonCircle={this.props.styleButtonCircle}
-            styleCircleHiddenPassword={this.props.styleCircleHiddenPassword}
-            styleCircleSizeEmpty={this.props.styleCircleSizeEmpty}
-            styleCircleSizeFull={this.props.styleCircleSizeFull}
-            styleColorButtonTitle={this.props.styleColorButtonTitle}
-            styleColorButtonTitleSelected={
-              this.props.styleColorButtonTitleSelected
-            }
-            styleColorSubtitle={this.props.styleColorSubtitle}
-            styleColorSubtitleError={this.props.styleColorSubtitleError}
-            styleColorTitle={this.props.styleColorTitle}
-            styleColorTitleError={this.props.styleColorTitleError}
-            styleColumnButtons={this.props.styleColumnButtons}
-            styleColumnDeleteButton={this.props.styleColumnDeleteButton}
-            styleContainer={this.props.styleContainerPinCode}
-            styleDeleteButtonColorHideUnderlay={
-              this.props.styleDeleteButtonColorHideUnderlay
-            }
-            styleDeleteButtonColorShowUnderlay={
-              this.props.styleDeleteButtonColorShowUnderlay
-            }
-            styleDeleteButtonIcon={this.props.styleDeleteButtonIcon}
-            styleDeleteButtonSize={this.props.styleDeleteButtonSize}
-            styleDeleteButtonText={this.props.styleDeleteButtonText}
-            styleEmptyColumn={this.props.styleEmptyColumn}
-            stylePinCodeCircle={this.props.stylePinCodeCircle}
-            styleRowButtons={this.props.styleRowButtons}
-            styleTextButton={this.props.styleTextButton}
-            styleTextSubtitle={this.props.styleTextSubtitle}
-            styleTextTitle={this.props.styleTextTitle}
-            styleViewTitle={this.props.styleViewTitle}
-            vibrationEnabled={this.props.vibrationEnabled}
-            delayBetweenAttempts={this.props.delayBetweenAttempts}
-          />
-        )}
-      </View>
-    )
-  }
+  return (
+    <View
+      style={[
+        styles.container,
+        props.styleContainer
+      ]}>
+      {status === PinStatus.choose && (
+        <PinCode
+          alphabetCharsVisible={props.alphabetCharsVisible}
+          buttonDeleteComponent={props.buttonDeleteComponent || null}
+          buttonDeleteText={props.buttonDeleteText}
+          buttonNumberComponent={props.buttonNumberComponent || null}
+          colorCircleButtons={props.colorCircleButtons}
+          colorPassword={props.colorPassword || undefined}
+          colorPasswordEmpty={props.colorPasswordEmpty}
+          colorPasswordError={props.colorPasswordError || undefined}
+          customBackSpaceIcon={props.customBackSpaceIcon}
+          emptyColumnComponent={props.emptyColumnComponent}
+          endProcess={endProcessCreation}
+          getCurrentLength={props.getCurrentLength}
+          iconButtonDeleteDisabled={props.iconButtonDeleteDisabled}
+          numbersButtonOverlayColor={props.numbersButtonOverlayColor || undefined}
+          passwordComponent={props.passwordComponent || null}
+          passwordLength={props.passwordLength || 4}
+          pinCodeVisible={props.pinCodeVisible}
+          sentenceTitle={props.titleChoose}
+          status={PinStatus.choose}
+          styleAlphabet={props.styleAlphabet}
+          styleButtonCircle={props.styleButtonCircle}
+          styleCircleHiddenPassword={props.styleCircleHiddenPassword}
+          styleCircleSizeEmpty={props.styleCircleSizeEmpty}
+          styleCircleSizeFull={props.styleCircleSizeFull}
+          styleColorButtonTitle={props.styleColorButtonTitle}
+          styleColorButtonTitleSelected={props.styleColorButtonTitleSelected}
+          styleColorSubtitle={props.styleColorSubtitle}
+          styleColorSubtitleError={props.styleColorSubtitleError}
+          styleColorTitle={props.styleColorTitle}
+          styleColorTitleError={props.styleColorTitleError}
+          styleColumnButtons={props.styleColumnButtons}
+          styleColumnDeleteButton={props.styleColumnDeleteButton}
+          styleContainer={props.styleContainerPinCode}
+          styleDeleteButtonColorHideUnderlay={props.styleDeleteButtonColorHideUnderlay}
+          styleDeleteButtonColorShowUnderlay={props.styleDeleteButtonColorShowUnderlay}
+          styleDeleteButtonIcon={props.styleDeleteButtonIcon}
+          styleDeleteButtonSize={props.styleDeleteButtonSize}
+          styleDeleteButtonText={props.styleDeleteButtonText}
+          styleEmptyColumn={props.styleEmptyColumn}
+          stylePinCodeCircle={props.stylePinCodeCircle}
+          styleRowButtons={props.styleRowButtons}
+          styleTextButton={props.styleTextButton}
+          styleTextSubtitle={props.styleTextSubtitle}
+          styleTextTitle={props.styleTextTitle}
+          styleViewTitle={props.styleViewTitle}
+          subtitle={props.subtitleChoose}
+          subtitleComponent={props.subtitleComponent || null}
+          subtitleError={props.subtitleError || 'Please try again'}
+          textPasswordVisibleFamily={props.textPasswordVisibleFamily}
+          textPasswordVisibleSize={props.textPasswordVisibleSize}
+          titleComponent={props.titleComponent || null}
+          titleValidationFailed={props.titleValidationFailed || 'PIN code unsafe'}
+          validationRegex={props.validationRegex}
+          vibrationEnabled={props.vibrationEnabled}
+        />
+      )}
+      {status === PinStatus.confirm && (
+        <PinCode
+          alphabetCharsVisible={props.alphabetCharsVisible}
+          buttonDeleteComponent={props.buttonDeleteComponent || null}
+          buttonDeleteText={props.buttonDeleteText}
+          buttonNumberComponent={props.buttonNumberComponent || null}
+          cancelFunction={cancelConfirm}
+          colorCircleButtons={props.colorCircleButtons}
+          colorPassword={props.colorPassword || undefined}
+          colorPasswordEmpty={props.colorPasswordEmpty}
+          colorPasswordError={props.colorPasswordError || undefined}
+          customBackSpaceIcon={props.customBackSpaceIcon}
+          emptyColumnComponent={props.emptyColumnComponent}
+          endProcess={endProcessConfirm}
+          getCurrentLength={props.getCurrentLength}
+          iconButtonDeleteDisabled={props.iconButtonDeleteDisabled}
+          numbersButtonOverlayColor={props.numbersButtonOverlayColor || undefined}
+          passwordComponent={props.passwordComponent || null}
+          passwordLength={props.passwordLength || 4}
+          pinCodeVisible={props.pinCodeVisible}
+          previousPin={pinCode}
+          sentenceTitle={props.titleConfirm}
+          status={PinStatus.confirm}
+          subtitle={props.subtitleConfirm}
+          subtitleComponent={props.subtitleComponent || null}
+          subtitleError={props.subtitleError || 'Please try again'}
+          textPasswordVisibleFamily={props.textPasswordVisibleFamily}
+          textPasswordVisibleSize={props.textPasswordVisibleSize}
+          titleAttemptFailed={props.titleAttemptFailed || 'Incorrect PIN Code'}
+          titleComponent={props.titleComponent || null}
+          titleConfirmFailed={props.titleConfirmFailed || 'Your entries did not match'}
+          styleAlphabet={props.styleAlphabet}
+          styleButtonCircle={props.styleButtonCircle}
+          styleCircleHiddenPassword={props.styleCircleHiddenPassword}
+          styleCircleSizeEmpty={props.styleCircleSizeEmpty}
+          styleCircleSizeFull={props.styleCircleSizeFull}
+          styleColorButtonTitle={props.styleColorButtonTitle}
+          styleColorButtonTitleSelected={props.styleColorButtonTitleSelected}
+          styleColorSubtitle={props.styleColorSubtitle}
+          styleColorSubtitleError={props.styleColorSubtitleError}
+          styleColorTitle={props.styleColorTitle}
+          styleColorTitleError={props.styleColorTitleError}
+          styleColumnButtons={props.styleColumnButtons}
+          styleColumnDeleteButton={props.styleColumnDeleteButton}
+          styleContainer={props.styleContainerPinCode}
+          styleDeleteButtonColorHideUnderlay={props.styleDeleteButtonColorHideUnderlay}
+          styleDeleteButtonColorShowUnderlay={props.styleDeleteButtonColorShowUnderlay}
+          styleDeleteButtonIcon={props.styleDeleteButtonIcon}
+          styleDeleteButtonSize={props.styleDeleteButtonSize}
+          styleDeleteButtonText={props.styleDeleteButtonText}
+          styleEmptyColumn={props.styleEmptyColumn}
+          stylePinCodeCircle={props.stylePinCodeCircle}
+          styleRowButtons={props.styleRowButtons}
+          styleTextButton={props.styleTextButton}
+          styleTextSubtitle={props.styleTextSubtitle}
+          styleTextTitle={props.styleTextTitle}
+          styleViewTitle={props.styleViewTitle}
+          vibrationEnabled={props.vibrationEnabled}
+          delayBetweenAttempts={props.delayBetweenAttempts}
+        />
+      )}
+    </View>
+  );
 }
-
 
 const styles = StyleSheet.create({
   container: {
